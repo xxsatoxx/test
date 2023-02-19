@@ -1,0 +1,98 @@
+{% extends "detector/base.html" %}
+{% block content %}
+
+<!-- flashエラーを表示する -->
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<ul>
+    {% for message in messages %}
+    <li class="flash">{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endwith %}
+
+<!-- 画像一覧を表示する -->
+{% for user_image in user_images %}
+<div class="card col-md-7 dt-image-content">
+    <header class="d-flex justify-content-between">
+        <!-- {{ user_image.User.username }} -->
+        <div class="dt-image-username"><font face="San Francisco"><b><h3>Detectagram</h3></b></font></div>
+        <!-- 物体検知フォームを追加する -->
+        <div class="d-flex flex-row-reverse">
+            <div class="p-2">
+                <form action="{{ url_for('detector.detect', image_id=user_image.UserImage.id) }}" method="POST">
+                    {{ detector_form.csrf_token }}
+                    {% if current_user.id == user_image.User.id and user_image.UserImage.is_detected == False %}
+                    {{detector_form.submit(class="btn btn-primary")}}
+                    {% else %}
+                    {{ detector_form.submit(class="btn btn-primary",disabled="disabled")}}
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </header>
+    <section>
+        <img src="{{ url_for('detector.image_file', filename=user_image.UserImage.image_path) }}" alt="アップロード画像" />
+    </section>
+    <footer>
+        {% if user_image_tag_dict[user_image.UserImage.id] %}
+        {% set sorted_tags = user_image_tag_dict[user_image.UserImage.id]|sort(attribute='tag_name') %}
+        {% endif %}
+        {% set tag_counter = {} %}
+        {% for tag in sorted_tags %}
+        {% set tag_name = tag.tag_name %}
+        {% if tag_counter.get(tag_name, 0) > 0 %}
+        {% set tag_name = tag_name ~ tag_counter.get(tag_name) %}
+        {% endif %}
+        #{{ tag_name }}
+        {% set tag_counter = tag_counter.update({tag.tag_name: tag_counter.get(tag.tag_name, 0) + 1}) %}
+        {% endfor %}
+    </footer>
+    <style>/*
+    <!-- リロードアニメーションを表示する -->
+    <div id="reload-animation" class="text-center" style="display: none;">
+        <img src="path/to/your/loading-image" />
+    </div>
+    <!-- リロードボタンを追加する -->
+    <div style="padding-left: 0px;">
+        <div class="col-md-10 text-right dt-image-reload-btn">
+            <button id="reload-button" class="btn btn-primary">リロード</button>
+        </div>
+    </div>
+    <!-- JavaScriptを追加する -->
+    <script>
+    $(function () {
+        $("#reload-button").click(function () {
+            $("#reload-animation").show();
+            setTimeout(function () {
+                location.reload();
+            }, 3000); // 3秒後にリロード
+        });
+    });
+    </script>
+    */</style>
+    
+    <div class="d-flex flex-row-reverse">
+        <!-- 画像削除ボタンのフォームを追加する -->
+        <div class="p-2">
+            <form action="{{ url_for('detector.delete_image', image_id=user_image.UserImage.id) }}" method="POST">
+                {{ delete_form.csrf_token }}
+                {% if current_user.id == user_image.User.id %}
+                {{ delete_form.submit(class="btn btn-danger") }}
+                {% else %}
+                {{ delete_form.submit(class="btn btn-danger", disabled="disabled") }}
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+</div>
+{% endfor %}
+<div style="padding-bottom: 30px;">
+    <!-- 画像アップロード画面へのリンクを追加する -->
+    <div class="col-md-10 text-right dt-image-register-btn">
+        <a href="{{ url_for('detector.upload_image') }}" class="btn btn-primary">画像新規登録</a>
+    </div>
+</div>
+{% endblock %}
